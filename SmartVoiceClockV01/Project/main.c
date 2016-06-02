@@ -23,6 +23,9 @@
 
 #include "main.h"
 
+#define ALARMHANDLE
+
+
 #define HARDWARE_VER    "0.1"
 #define SOFTWARE_VER    "0.1"
 #define Main_DispVer()    pr_debug("\033[035mMain Ver \r\nHARDWARE_VER:%s \r\nSOFTWARE_VER:%s\033[0m \r\n",HARDWARE_VER,SOFTWARE_VER)
@@ -228,7 +231,9 @@ int main(void)
         }
         Main_500msHandle();
         Main_1sHandle(); 
+#ifdef ALARMHANDLE
         Main_AlarmHandle();
+#endif
         USARTRX_Handle();
         USARTRX2_Handle();        
     }
