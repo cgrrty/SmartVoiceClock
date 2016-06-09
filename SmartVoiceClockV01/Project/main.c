@@ -33,7 +33,7 @@
 #define	LEDMAXLIGHT		1000
 extern  const uint8_t segnum[10];
 
-uint16_t  seghello[1024*2]={SEGB|SEGC|SEGE|SEGF|SEGG,//H
+uint16_t  seghello[100]={SEGB|SEGC|SEGE|SEGF|SEGG,//H
                     SEGA|SEGD|SEGE|SEGF|SEGG,//E
                     SEGD|SEGE|SEGF,//L
                     SEGD|SEGE|SEGF,//L    
@@ -63,7 +63,7 @@ uint16_t     gerlight =0;   //环境亮度
 
 uint8_t      gtermprature;
 
-uint32_t     gsetmin=1;   //定时值
+volatile uint32_t     gsetmin=1;   //定时值
 uint16_t     gtimercnt=0;  //
 uint8_t      gsegdispflag = 0;
 
@@ -99,7 +99,6 @@ int main(void)
 {
     uint8_t k=0;
     uint32_t i=0;
-    uint8_t max[1024+512]={0};
     gsystick=0;
     SYSTICK_Init(); 
     USART1_Config();
@@ -107,109 +106,17 @@ int main(void)
 
     SEG_GPIOInit();
     KEY_Init();
-
     VoicePowerConfig();
-    VoicePowerSwitch(ENABLE);    
+    VoicePowerSwitch(DISABLE);  //语音部分 供电断开  
     RTC_CheckAndConfig();      
     TIM_Config();
     Main_DispVer();
     PrintfClk();  //打印时钟信息   
-//    if(*(uint32_t*)(FLASH_USER_START_ADDR)!=0xffffffff) //如果 Flash 不为空值 测赋值
-//    {
-//        tmp=*(uint32_t*)(FLASH_USER_START_ADDR);
-//        galhh=(uint8_t)(tmp>>8);
-//        galmin=(uint8_t)(tmp>>16);
-//        if(galhh==0xff)
-//        {
-//           galhh =0;
-//        }
-//        if(galmin==0xff)
-//        {
-//           galmin =0;
-//        }
-//    }
-//    memset(max,1,sizeof(max));
-//    pr_debug("%d\r\n",sizeof(max));
-//    for(i=0;i<(sizeof(max));i++)
-//    {
-//        pr_debug("%d",max[i]);
-//        if((i+1)%8==0)
-//        pr_debug("\r\n");
-//    }
-//    i=0;
-//    seghello[9+i] = segnum[2];
-//    i++;
-//    seghello[9+i] = segnum[3];
-//    i++;
-//    seghello[9+i] = SEGG;
-//    i++;
-//    seghello[9+i] = segnum[0];
-//    i++;    
-//    seghello[9+i] = segnum[6];
-//    i++;      
-//    seghello[9+i] = SEGG;
-//    i++;  
-//    seghello[9+i] = segnum[0];
-//    i++;    
-//    seghello[9+i] = segnum[6]; 
-//    for(i=0;i<9;i++)
-//    {
-//        while(1)
-//        {       
-//            if(mainflag&FLAG_500MS)
-//            {
-//                IOCLR(mainflag,FLAG_500MS);
-//                gdisbuf[0]=gdisbuf[1];                
-//                gdisbuf[1]=gdisbuf[2];                
-//                gdisbuf[2]=gdisbuf[3];
-//                if(i<6)
-//                gdisbuf[3]=seghello[i];
-//                else
-//                gdisbuf[3]=0;
-//                break;
-//            }          
-//        }
-//    }    
-//while(1)
-//{
 
-//    for(i=3;i<14;i++)
-//    {
-//        while(1)
-//        {
-//            if(mainflag&FLAG_K)
-//            {     
-//                IOCLR(mainflag,FLAG_K);
-//                k=gk;										//获取键值
-//                KeyPro(k);							//按键处理
-//        //        Main_displyHandle();		//显示控制  
-//            }        
-
-//            if(mainflag&FLAG_500MS)
-//            {
-//                IOCLR(mainflag,FLAG_500MS);
-
-//                RTC_GetTime(RTC_Format_BIN,&RTC_TimeStruct); 
-//                seghello[9] = segnum[RTC_TimeStruct.RTC_Hours/10]; 
-//                seghello[10] = segnum[RTC_TimeStruct.RTC_Hours%10];
-//                
-//                seghello[12] = segnum[RTC_TimeStruct.RTC_Minutes/10];                
-//                seghello[13] = segnum[RTC_TimeStruct.RTC_Minutes%10]; 
-//                
-//                seghello[15] = segnum[RTC_TimeStruct.RTC_Seconds/10];                
-//                seghello[16] = segnum[RTC_TimeStruct.RTC_Seconds%10]; 
-//                memset(seghellobuf,0,14);
-//                memcpy(seghellobuf+4,seghello+9,15);
-//                            
-//                gdisbuf[0]=seghellobuf[i-3];                
-//                gdisbuf[1]=seghellobuf[i-2];                
-//                gdisbuf[2]=seghellobuf[i-1]; 
-//                gdisbuf[3]=seghellobuf[i];                            
-//                break;
-//            }          
-//        }
-//    }
-//}
+    if(RTC_ReadBackupRegister(RTC_BKP_DR1)&(1<<31)) //首先判断一下 最高位的值 防止将寄存器无效值赋给变量
+    {
+        gsetmin = RTC_ReadBackupRegister(RTC_BKP_DR1)&(~(1<<31));//最高位 为标志位 舍去  //恢复变量值
+    }
 
     RTC_GetTime(RTC_Format_BIN,&RTC_TimeStruct);    
     gdisnum[0]=RTC_TimeStruct.RTC_Hours/10;
@@ -225,9 +132,9 @@ int main(void)
         if(mainflag&FLAG_K)
         {     
             IOCLR(mainflag,FLAG_K);
-            k=gk;										//获取键值
+            k=gk;								//获取键值
             KeyPro(k);							//按键处理
-            Main_displyHandle();		//显示控制  
+            Main_displyHandle();		        //显示控制  
         }
         Main_500msHandle();
         Main_1sHandle(); 
@@ -310,6 +217,8 @@ void EnterStopMode()
     NVIC_InitStructure.NVIC_IRQChannelPriority = 0;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
+    
+    RTC_WriteBackupRegister(RTC_BKP_DR1,gsetmin|(1<<31));//最高位为标志位 其他位为数据 1代表 数据有效 将设定的 定时值保存到备份寄存器中
 
     PWR_EnterSTOPMode(PWR_Regulator_LowPower,PWR_STOPEntry_WFI);                      
 }
@@ -334,8 +243,8 @@ void Main_displyHandle()
                             gdisbuf[3]=segnum[gdisnum[3]]; 
                             if(t_cnt&BIT(6))
                             {
-                                    IOSET(gdisbuf[2],SEGDP); //点闪烁
-                                    IOSET(gdisbuf[3],SEGDP);                           
+                                IOSET(gdisbuf[2],SEGDP); //点闪烁
+                                IOSET(gdisbuf[3],SEGDP);                           
                             }
                             break;
                     case   NORMAL_TEMPERDISP:
