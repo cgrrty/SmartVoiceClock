@@ -24,7 +24,7 @@
 #include "main.h"
 
 #define ALARMHANDLE
-
+#define IDLECNTMAX (5*60)
 
 #define HARDWARE_VER    "0.1"
 #define SOFTWARE_VER    "0.1"
@@ -51,6 +51,7 @@ uint8_t     gkvalue=0;
 uint8_t     t_cnt; //1s计时
 uint8_t     g_tcnt;//500ms计时
 uint8_t     g1scnt;
+uint32_t    g_idlecnt=0;
 uint16_t    mainflag=0;
 uint8_t		state=STATE_NORMAL;
 
@@ -414,6 +415,20 @@ void Main_1sHandle()
     {
         IOCLR(mainflag,FLAG_1S);
 		pr_debug("VoicePowerSwitchState :%d\r\n",GPIO_ReadOutputDataBit(VOICEPOWERCONTR_PORT,VOICEPOWERCONTR_GPIO_PIN));		
+
+        if(gttsreporttimeflag ==1||gvoiceplayenable==1||state==STATE_TIMERSTUDY)//如果处于计时模式或者语音播放状态 空闲计数清零
+        {
+          g_idlecnt =0;  
+        }
+        else
+        {
+            g_idlecnt++;
+            if(g_idlecnt>=IDLECNTMAX)//增加自动休眠功能
+            {
+                EnterStopMode();
+                NVIC_SystemReset();     
+            }            
+        }
 
         if(g1scnt>0)
         {
