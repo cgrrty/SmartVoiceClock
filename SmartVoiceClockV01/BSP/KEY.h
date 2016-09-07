@@ -46,7 +46,8 @@ STATE_TIMERSTUDY=8,  //计时模式做题
 enum dispmode
 {
     NORMAL_TIMEDISP =0,   //时间显示
-    NORMAL_TEMPERDISP=1   //温度显示    
+    NORMAL_TEMPERDISP=1,  //温度显示 
+    NORMAL_LOWPOWER =2,
 };
 
 

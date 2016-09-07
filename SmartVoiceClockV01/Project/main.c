@@ -23,8 +23,15 @@
 
 #include "main.h"
 
-#define ALARMHANDLE
-#define IDLECNTMAX (5*60)
+//宏开关 选择功能 0 关闭 1 打开 
+#define ALARMHANDLE     1
+#define AUTO_SET_LIGHT  0
+
+//休眠计时 单位 s
+#define IDLECNTMAX (45*60)
+//当电压低时 温度值 会偏大 以此判断低电量
+#define MAX_TERMPRATURE 45 
+const char  DataTime[] __attribute__((at(0x08001000))) =  __DATE__ __TIME__ ; /* RO */
 
 #define HARDWARE_VER    "0.1"
 #define SOFTWARE_VER    "0.1"
@@ -82,7 +89,6 @@ TTSData_Typedf TTSData_structure;       //语音合成命令结构体
 uint16_t gvoicepowertimer = 30;
 
 uint32_t gsystick=0;
-//extern  const uint8_t segnum[10];
 uint8_t  gdispmode;
 
 uint8_t gvoiceplayenable =0;
@@ -99,7 +105,6 @@ void Main_AlarmHandle(void);
 int main(void)
 {
     uint8_t k=0;
-    uint32_t i=0;
     gsystick=0;
     SYSTICK_Init(); 
     USART1_Config();
@@ -139,7 +144,7 @@ int main(void)
         }
         Main_500msHandle();
         Main_1sHandle(); 
-#ifdef ALARMHANDLE
+#if  ALARMHANDLE
         Main_AlarmHandle();
 #endif
         USARTRX_Handle();
@@ -253,7 +258,25 @@ void Main_displyHandle()
                             gdisbuf[1]=segnum[gdisnum[1]]; 
                             gdisbuf[2]=SEGA+SEGB+SEGF+SEGG;  
                             gdisbuf[3]=SEGA+SEGD+SEGE+SEGF;                                   
-                            break;                                
+                            break; 
+                    case   NORMAL_LOWPOWER:
+                            gdisbuf[0]=segnum[gdisnum[0]];
+                            gdisbuf[1]=segnum[gdisnum[1]]; 
+                            gdisbuf[2]=segnum[gdisnum[2]];  
+                            gdisbuf[3]=segnum[gdisnum[3]]; 
+                            if(t_cnt%32==0)
+                            {
+                                gdisbuf[0]=0;
+                                gdisbuf[1]=0; 
+                                gdisbuf[2]=0;  
+                                gdisbuf[3]=0;                                                         
+                            }                             
+                            if(t_cnt&BIT(6))
+                            {                               
+                                IOSET(gdisbuf[2],SEGDP); //点闪烁
+                                IOSET(gdisbuf[3],SEGDP);                           
+                            }                    
+                            break;
                     default:
                             break;                            
                 }
@@ -416,14 +439,14 @@ void Main_1sHandle()
         IOCLR(mainflag,FLAG_1S);
 		pr_debug("VoicePowerSwitchState :%d\r\n",GPIO_ReadOutputDataBit(VOICEPOWERCONTR_PORT,VOICEPOWERCONTR_GPIO_PIN));		
 
-        if(gttsreporttimeflag ==1||gvoiceplayenable==1||state==STATE_TIMERSTUDY)//如果处于计时模式或者语音播放状态 空闲计数清零
+        if(gvoiceplayenable==1||state==STATE_TIMERSTUDY)//如果处于计时模式或者语音播放状态 空闲计数清零
         {
           g_idlecnt =0;  
         }
         else
         {
             g_idlecnt++;
-            if(g_idlecnt>=IDLECNTMAX)//增加自动休眠功能
+            if(g_idlecnt>=IDLECNTMAX && gttsreporttimeflag!=1)//增加自动休眠功能
             {
                 EnterStopMode();
                 NVIC_SystemReset();     
@@ -442,39 +465,49 @@ void Main_1sHandle()
         }
         if(state==STATE_NORMAL)//正常显示时 取显示码
         {
-            if(cnt_1s < setval-2)
+            gtermprature = ADC_GetTemper(); 
+            if(gtermprature >MAX_TERMPRATURE)//如果电量低
             {
-                gdispmode = NORMAL_TIMEDISP;
+                gdispmode = NORMAL_LOWPOWER;
                 gdisnum[0]=RTC_TimeStruct.RTC_Hours/10;
                 gdisnum[1]=RTC_TimeStruct.RTC_Hours%10;            
                 gdisnum[2]=RTC_TimeStruct.RTC_Minutes/10;
-                gdisnum[3]=RTC_TimeStruct.RTC_Minutes%10;                                      
+                gdisnum[3]=RTC_TimeStruct.RTC_Minutes%10;                          
             }
-            else if(cnt_1s== setval-2)
+            else
             {
-                gtermprature = ADC_GetTemper();   
-                
-                gdisnum[0]=gtermprature/10;
-                gdisnum[1]=gtermprature%10;               
-                gdispmode = NORMAL_TEMPERDISP;
-							
-                gsegdispflag =1;
-                pr_debug("gerlight :%d\r\n",gerlight=SEGDetectLight());
-                gsegdispflag =0;            
-                gledlight = 3000/(gerlight/1000)+200;//自动调光算法
-                if(gledlight>1000)
-                gledlight = LEDMAXLIGHT ;
-                pr_debug("gledlight :%d\r\n",gledlight);
-            }
-            else 
-            {
-                gtermprature = ADC_GetTemper();   
-                
-                gdisnum[0]=gtermprature/10;
-                gdisnum[1]=gtermprature%10;               
-                gdispmode = NORMAL_TEMPERDISP;                
-            }                
-                                              
+                if(cnt_1s < setval-2)
+                {
+                    gdispmode = NORMAL_TIMEDISP;
+                    gdisnum[0]=RTC_TimeStruct.RTC_Hours/10;
+                    gdisnum[1]=RTC_TimeStruct.RTC_Hours%10;            
+                    gdisnum[2]=RTC_TimeStruct.RTC_Minutes/10;
+                    gdisnum[3]=RTC_TimeStruct.RTC_Minutes%10;                                      
+                }
+                else if(cnt_1s== setval-2)
+                {
+    //                gtermprature = ADC_GetTemper();                      
+                    gdisnum[0]=gtermprature/10;
+                    gdisnum[1]=gtermprature%10;               
+                    gdispmode = NORMAL_TEMPERDISP;
+#if AUTO_SET_LIGHT
+                    gsegdispflag =1;
+                    pr_debug("gerlight :%d\r\n",gerlight=SEGDetectLight());
+                    gsegdispflag =0;            
+                    gledlight = 3000/(gerlight/1000)+200;//自动调光算法
+                    if(gledlight>1000)
+                    gledlight = LEDMAXLIGHT ;
+                    pr_debug("gledlight :%d\r\n",gledlight);
+#endif                                                    
+                }
+                else 
+                {
+//                    gtermprature = ADC_GetTemper();                      
+                    gdisnum[0]=gtermprature/10;
+                    gdisnum[1]=gtermprature%10;               
+                    gdispmode = NORMAL_TEMPERDISP;                
+                }                       
+            }                                                            
         }            
         pr_debug("%02d-%02d-%02d\r\n",RTC_TimeStruct.RTC_Hours,RTC_TimeStruct.RTC_Minutes,RTC_TimeStruct.RTC_Seconds);           
     } 

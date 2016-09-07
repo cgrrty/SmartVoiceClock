@@ -235,7 +235,7 @@ void RTC_TimeRegulate(void)
     while (tmp_hh == 0xFF)
     {
 //        tmp_hh = USART_Scanf(23);
-        tmp_hh=00;
+        tmp_hh=8;
         RTC_TimeStructure.RTC_Hours = tmp_hh;
     }
     printf("  %0.2d\n\r", tmp_hh);
@@ -244,7 +244,7 @@ void RTC_TimeRegulate(void)
     while (tmp_mm == 0xFF)
     {
 //        tmp_mm = USART_Scanf(59);
-        tmp_mm=00;
+        tmp_mm=38;
         RTC_TimeStructure.RTC_Minutes = tmp_mm;
     }
     printf("  %0.2d\n\r", tmp_mm);

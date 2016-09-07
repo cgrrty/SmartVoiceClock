@@ -20,6 +20,7 @@ extern uint8_t gk;
 extern uint8_t state;
 extern uint8_t gkvalue;
 extern uint32_t gsetmin;
+extern uint32_t    g_idlecnt;
 
 extern const unsigned int seltab[];
 extern  uint16_t     gdisnum[4];//存放数字
@@ -198,8 +199,7 @@ void KeyPro(uint8_t k)
     
 	if(keyval)
 	{
-//        VoicePowerSwitch(ENABLE);
-//        gvoicepowertimer =10;
+       g_idlecnt = 0 ;//如果有按键按下 休眠计数清零
 	}
 	switch(keyval)
 	{
