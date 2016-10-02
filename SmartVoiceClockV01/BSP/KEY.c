@@ -189,7 +189,7 @@ void KeyPro(uint8_t k)
     static uint8_t tp_hh=0;
     static uint8_t tp_min=0; 
 
-    TTSData_Typedf tTTSData_Structure;
+//    TTSData_Typedf tTTSData_Structure;
 
     RTC_AlarmTypeDef RTC_AlarmStructure;
     
@@ -224,13 +224,13 @@ void KeyPro(uint8_t k)
                 state=STATE_SETALMIN; 
                 
                 
-                //语音                
-                tTTSData_Structure.cnt =0;  
+//                //语音                
+//                tTTSData_Structure.cnt =0;  
 
-                tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x010c;//分钟
-                tTTSData_Structure.cnt++;
-                //语音结束
-                USART_TTSCmd(tTTSData_Structure.buf,tTTSData_Structure.cnt);                
+//                tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x010c;//分钟
+//                tTTSData_Structure.cnt++;
+//                //语音结束
+//                USART_TTSCmd(tTTSData_Structure.buf,tTTSData_Structure.cnt);                
                 break;
             }            
             if(state==STATE_SETALMIN)
@@ -258,28 +258,28 @@ void KeyPro(uint8_t k)
                 
                 
                 state=STATE_NORMAL;  
-                //语音                
-                tTTSData_Structure.cnt =0;  
-                tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x011a;//退出
-                tTTSData_Structure.cnt++;
-                tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x0113;//设置
-                tTTSData_Structure.cnt++;                
-                USART_TTSCmd(tTTSData_Structure.buf,tTTSData_Structure.cnt); 
-                //语音结束                
+//                //语音                
+//                tTTSData_Structure.cnt =0;  
+//                tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x011a;//退出
+//                tTTSData_Structure.cnt++;
+//                tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x0113;//设置
+//                tTTSData_Structure.cnt++;                
+//                USART_TTSCmd(tTTSData_Structure.buf,tTTSData_Structure.cnt); 
+//                //语音结束                
                 break;
             }              
             //设置时钟小时 、分钟           
             if(state==STATE_SETHOUR)
             {
                 state=STATE_SETMIN;  
-               //语音
-               tTTSData_Structure.cnt =0;  
+//               //语音
+//               tTTSData_Structure.cnt =0;  
 
-               tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x010c;//分钟
-               tTTSData_Structure.cnt++;
-                
-               USART_TTSCmd(tTTSData_Structure.buf,tTTSData_Structure.cnt);
-               //语音 结束                  
+//               tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x010c;//分钟
+//               tTTSData_Structure.cnt++;
+//                
+//               USART_TTSCmd(tTTSData_Structure.buf,tTTSData_Structure.cnt);
+//               //语音 结束                  
                 break;
             }
             if(state==STATE_SETMIN)
@@ -291,28 +291,20 @@ void KeyPro(uint8_t k)
                      RTC_SetTime(RTC_Format_BIN,&RTC_TimeStruct);  //如果未设置 则不从新设置时间               
                  }
                  state=STATE_NORMAL; 
-//                 state=STATE_SETALHOUR;  
-//                 
-//               //更新数码管显示
-//               gdisnum[0]=galhh/10;
-//               gdisnum[1]=galhh%10;
-//               gdisnum[2]=galmin/10;
-//               gdisnum[3]=galmin%10;
-//               //更新数码管显示结束   
                
-               //语音
-               tTTSData_Structure.cnt =0;  
-               tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x0112;//闹钟
-               tTTSData_Structure.cnt++;
-                
-               tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x0113;//设置
-               tTTSData_Structure.cnt++;
+//               //语音
+//               tTTSData_Structure.cnt =0;  
+//               tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x0112;//闹钟
+//               tTTSData_Structure.cnt++;
+//                
+//               tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x0113;//设置
+//               tTTSData_Structure.cnt++;
 
-               tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x0116;//小时
-               tTTSData_Structure.cnt++;
-                
-               USART_TTSCmd(tTTSData_Structure.buf,tTTSData_Structure.cnt);
-               //语音 结束                   
+//               tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x0116;//小时
+//               tTTSData_Structure.cnt++;
+//                
+//               USART_TTSCmd(tTTSData_Structure.buf,tTTSData_Structure.cnt);
+//               //语音 结束                   
                  break;
             }
            
@@ -333,12 +325,7 @@ void KeyPro(uint8_t k)
                 }
                 gvoicecheckplaystate=1;
                 break;
-                
-//                tTTSData_Structure.cnt =0;  
-//                tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x0200;  //播放眼保健操
-//                tTTSData_Structure.cnt++;  
-//                USART_TTSCmd(tTTSData_Structure.buf,tTTSData_Structure.cnt);  
-//                break;                
+                             
             }
             //定時分鐘 增加
             if(state==STATE_SETTIMER)
@@ -390,7 +377,6 @@ void KeyPro(uint8_t k)
             }            
             break;
         case KEY3PRESS:
-//            IOSET(mainflag,FLAG_RDTM);
             //定時分鐘 减一
             if(state==STATE_SETTIMER)
             {
@@ -489,19 +475,19 @@ void KeyPro(uint8_t k)
 
                //更新数码管显示结束
 
-               //语音
-               tTTSData_Structure.cnt =0;  
-               tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x0114;//时间
-               tTTSData_Structure.cnt++;
-                
-               tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x0113;//设置
-               tTTSData_Structure.cnt++;
+//               //语音
+//               tTTSData_Structure.cnt =0;  
+//               tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x0114;//时间
+//               tTTSData_Structure.cnt++;
+//                
+//               tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x0113;//设置
+//               tTTSData_Structure.cnt++;
 
-               tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x0116;//小时
-               tTTSData_Structure.cnt++;
-                
-               USART_TTSCmd(tTTSData_Structure.buf,tTTSData_Structure.cnt);
-               //语音 结束                
+//               tTTSData_Structure.buf[tTTSData_Structure.cnt]=0x0116;//小时
+//               tTTSData_Structure.cnt++;
+//                
+//               USART_TTSCmd(tTTSData_Structure.buf,tTTSData_Structure.cnt);
+//               //语音 结束                
             }
             break; 
         case  KEY4LONGPRESS:
@@ -511,10 +497,6 @@ void KeyPro(uint8_t k)
         default:
             break;
 	}
-    if(keyval!=0)
-    {
-//        printf("keypress: %2d\r\n",keyval);
-    }
 }
 
 

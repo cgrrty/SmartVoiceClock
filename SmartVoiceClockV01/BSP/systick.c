@@ -41,6 +41,22 @@ void SYSTICK_Init(void)
         
 }
 
+ /**
+  * @file   delay_us
+  * @brief  毫秒延时
+  * @param  延时时间
+  * @retval 无
+  */
+void delay_us(uint16_t nus)
+{
+//  nTime=nms;
+//  while(nTime);
+    int8_t i;
+    for(i=0;i<10;i++)
+    {
+        while(nus--);
+    }
+}
 
  /**
   * @file   delay_ms

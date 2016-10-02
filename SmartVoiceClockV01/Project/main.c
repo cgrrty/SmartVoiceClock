@@ -31,13 +31,20 @@
 #define IDLECNTMAX (45*60)
 //当电压低时 温度值 会偏大 以此判断低电量
 #define MAX_TERMPRATURE 45 
+//指定音量等级 20级  取值范围 0-30 级
+#define VOLUME_VALUE 20
+//数码管亮度 0 - 1000  缺省值
+#define LEDIDLELIGHT    900
+//数码管亮度 0 - 1000  最大值
+#define	LEDMAXLIGHT		1000
+
 const char  DataTime[] __attribute__((at(0x08001000))) =  __DATE__ __TIME__ ; /* RO */
 
 #define HARDWARE_VER    "0.1"
 #define SOFTWARE_VER    "0.1"
-#define Main_DispVer()    pr_debug("\033[035mMain Ver \r\nHARDWARE_VER:%s \r\nSOFTWARE_VER:%s\033[0m \r\n",HARDWARE_VER,SOFTWARE_VER)
+#define Main_DispVer()    pr_debug("\033[035mMain Ver \r\nHARDWARE_VER:%s \r\nSOFTWARE_VER:%s\r\nDate:%s\r\n\033[0m \r\n",HARDWARE_VER,SOFTWARE_VER,__DATE__ __TIME__)
 
-#define	LEDMAXLIGHT		1000
+
 extern  const uint8_t segnum[10];
 
 uint16_t  seghello[100]={SEGB|SEGC|SEGE|SEGF|SEGG,//H
@@ -66,12 +73,12 @@ uint8_t		state=STATE_NORMAL;
 
 uint16_t     gdisbuf[4]={0};//存放对应段码 显存
 uint16_t     gdisnum[4]={0};//存放数字
-uint16_t     gledlight =1000;  //led亮度
+uint16_t     gledlight = LEDIDLELIGHT;  //led亮度
 uint16_t     gerlight =0;   //环境亮度
 
 uint8_t      gtermprature;
 
-volatile uint32_t     gsetmin=1;   //定时值
+uint32_t     gsetmin=1;   //定时值
 uint16_t     gtimercnt=0;  //
 uint8_t      gsegdispflag = 0;
 
@@ -119,9 +126,9 @@ int main(void)
     Main_DispVer();
     PrintfClk();  //打印时钟信息   
 
-    if(RTC_ReadBackupRegister(RTC_BKP_DR1)&(1<<31)) //首先判断一下 最高位的值 防止将寄存器无效值赋给变量
+    if(RTC_ReadBackupRegister(RTC_BKP_DR1)&((uint32_t)1<<31)) //首先判断一下 最高位的值 防止将寄存器无效值赋给变量
     {
-        gsetmin = RTC_ReadBackupRegister(RTC_BKP_DR1)&(~(1<<31));//最高位 为标志位 舍去  //恢复变量值
+        gsetmin = RTC_ReadBackupRegister(RTC_BKP_DR1)&(~((uint32_t)1<<31));//最高位 为标志位 舍去  //恢复变量值
     }
 
     RTC_GetTime(RTC_Format_BIN,&RTC_TimeStruct);    
@@ -224,7 +231,7 @@ void EnterStopMode()
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
     
-    RTC_WriteBackupRegister(RTC_BKP_DR1,gsetmin|(1<<31));//最高位为标志位 其他位为数据 1代表 数据有效 将设定的 定时值保存到备份寄存器中
+    RTC_WriteBackupRegister(RTC_BKP_DR1,(gsetmin|((uint32_t)1<<31)));//最高位为标志位 其他位为数据 1代表 数据有效 将设定的 定时值保存到备份寄存器中
 
     PWR_EnterSTOPMode(PWR_Regulator_LowPower,PWR_STOPEntry_WFI);                      
 }
@@ -423,11 +430,6 @@ void Main_500msHandle()
                 gttsreporttimeflag =1;
             }
         }  
-//        if(mainflag&FLAG_RDTM)//语音报时
-//        {
-//            IOCLR(mainflag,FLAG_RDTM);
-//            TTSReport_time(&RTC_TimeStruct);
-//        }
     }
 }
 void Main_1sHandle()
@@ -465,7 +467,9 @@ void Main_1sHandle()
         }
         if(state==STATE_NORMAL)//正常显示时 取显示码
         {
-            gtermprature = ADC_GetTemper(); 
+            gtermprature = ADC_GetTemper();
+            if(gtermprature < 15)
+            gtermprature = 15;
             if(gtermprature >MAX_TERMPRATURE)//如果电量低
             {
                 gdispmode = NORMAL_LOWPOWER;
@@ -534,10 +538,12 @@ void USARTRX_Handle()
 		tbuf[0]=USARTRX_structure.rxbuf[3];  
 		tbuf[1]=USARTRX_structure.rxbuf[6];
 		
-		if(tbuf[0] == 0x3f)//voiceIc 上电复位标志
+		if(tbuf[0] == 0x3f )//voiceIc 上电复位标志
 		{
-			voicereadyflag =1;			
-		}
+            USART_SendToDevice(0x06,VOLUME_VALUE);  //设置 指定音量   
+            delay_us(100);                          //加小延时（不然会出问题）
+			voicereadyflag =1;            
+		}        
 	}
     
     if(gttsreporttimeflag == 1)
@@ -548,7 +554,7 @@ void USARTRX_Handle()
         }
         if(voicereadyflag == 1)
         {
-            voicereadyflag = 0;        
+            voicereadyflag = 0; 
             TTSReport_time(&RTC_TimeStruct);
         }        
     }
@@ -623,9 +629,7 @@ void Main_AlarmHandle(void)
     {
         if(RTC_TimeStruct.RTC_Minutes ==0 ||RTC_TimeStruct.RTC_Minutes ==30)
         {
-//            if(RTC_TimeStruct.RTC_Seconds<1)
-//            TTSReport_time(&RTC_TimeStruct);
-            if(gttsreporttimeflag == 0&&RTC_TimeStruct.RTC_Seconds<1)
+            if(gttsreporttimeflag == 0&&RTC_TimeStruct.RTC_Seconds<1&&gvoiceplayenable == 0) //如果眼保健操再播放 就不报时 防止报时打断眼保
             {
                 gttsreporttimeflag = 1;
             }
